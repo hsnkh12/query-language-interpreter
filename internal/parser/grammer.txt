@@ -1,0 +1,53 @@
+<query> ::= <create-project-query>
+          | <delete-project-query>
+          | <rename-project-query>
+          | <create-collection-query>
+          | <delete-collection-query>
+          | <rename-collection-query>
+          | <add-query>
+          | <get-query>
+          | <get-one-query>
+          | <update-query>
+          | <delete-query>
+
+<create-project-query> ::= "create project" <string> ";"
+<delete-project-query> ::= "delete project" <string> ";"
+<rename-project-query> ::= "rename project" <string> "to" <string> ";"
+
+<create-collection-query> ::= "create collection" <string> ";"
+<delete-collection-query> ::= "delete collection" <string> ";"
+<rename-collection-query> ::= "rename collection" <string> "to" <string> ";"
+
+<add-query> ::= "add into" <string> "doc(<attributes>);"
+<attributes> ::= <attribute-pair> "," <attributes>
+              | <attribute-pair>
+<attribute-pair> ::= <string> ":" <string>
+
+<get-query> ::= "get from" <string> "attrs(" <attribute-list> ") where(" <conditions> ");"
+<attribute-list> ::= <string> "," <attribute-list>
+                  | <string>
+
+<get-one-query> ::= "get one from" <string> "attrs()" where();"
+
+<update-query> ::= "update from" <string> "set(" <attribute-pairs> ") where();"
+<attribute-pairs> ::= <attribute-pair> "," <attribute-pairs>
+                  | <attribute-pair>
+
+<delete-query> ::= "delete from" <string> "where();"
+
+<string> ::= "'" <any-character-except-single-quote> "'"
+
+<any-character-except-single-quote> ::= <character> <any-character-except-single-quote>
+                                     | ε
+
+<conditions> ::= <condition> "||" <conditions>
+             | <condition> "&&" <conditions>
+             | <condition>
+
+<condition> ::= <string> ":" <string>
+             | <string> "==" <string>
+             | <string> ">" <string>
+             | <string> "<" <string>
+             | <logic-function>
+
+<logic-function> ::= "logic(" <conditions> ")"
