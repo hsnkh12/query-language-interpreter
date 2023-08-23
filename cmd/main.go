@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	src := `create project 's' ;`
+	src := `add into 'collection' doc('key':doc('key':'value','key':doc('key': doc('key':'value'), 'key':'value'),'key':'value'));`
 
 	lexer_, err := parser.CreateNewLexer(src)
 
@@ -23,5 +23,8 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(parser.Seq)
+	for _, tok := range parser.Seq.Tokens {
+		fmt.Println(tok)
+	}
+
 }
