@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	src := `add into 'collection' doc('key':doc('key':'value','key':doc('key': doc('key':'value'), 'key':'value'),'key':'value'));`
+	src := `add into 'collection' doc('key':doc('key':12,'key':doc('key': doc('key':'value'), 'key':'value'),'key':'value'));`
 
 	lexer_, err := parser.CreateNewLexer(src)
 

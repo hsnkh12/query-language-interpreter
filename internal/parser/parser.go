@@ -92,7 +92,7 @@ func (p *Parser) Parse_CreateDelete_StringL() error {
 	p.PushToken()
 
 	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
-		err = p.End()
+		err = p.Parse_End()
 	} else {
 		err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal")
 	}
@@ -128,7 +128,7 @@ func (p *Parser) Parse_Rename_SecStringL() error {
 	p.PushToken()
 
 	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
-		err = p.End()
+		err = p.Parse_End()
 	} else {
 		err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expexted string literal")
 	}
@@ -136,7 +136,7 @@ func (p *Parser) Parse_Rename_SecStringL() error {
 	return err
 }
 
-func (p *Parser) End() error {
+func (p *Parser) Parse_End() error {
 
 	p.Lex()
 	var err error
@@ -254,11 +254,19 @@ func (p *Parser) Parse_Add_Inside_Doc() error {
 			err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes")
 		}
 
-	} else if p.Lexer.CurrentToken.Type == NUMBER_LITERAL {
+	} else if p.Lexer.CurrentToken.Type == NUMBER_LITERAL || p.Lexer.CurrentToken.Type == DOT {
 
-		if top == COLUMN {
+		if top == NUMBER_LITERAL || top == DOT {
+			p.Seq.Tokens[len(p.Seq.Tokens)-1].Lexem += string(p.Lexer.CurrentLexem)
+			err = p.Parse_Add_Inside_Doc()
+
+			// check if number using strconv
+
+		} else if top == COLUMN {
 			p.PushToken()
-			// parse number function
+			err = p.Parse_Add_Inside_Doc()
+			// check if number using strconv
+
 		} else {
 			err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore number literal")
 		}
@@ -267,7 +275,7 @@ func (p *Parser) Parse_Add_Inside_Doc() error {
 
 		if top == COLUMN {
 			p.PushToken()
-			// parse number function
+			// parse array function
 		} else {
 			err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore array")
 		}
@@ -310,7 +318,7 @@ func (p *Parser) Parse_Add_Inside_Doc() error {
 				p.nestedDoc--
 				err = p.Parse_Add_Inside_Doc()
 			} else {
-				err = p.End()
+				err = p.Parse_End()
 			}
 		}
 
