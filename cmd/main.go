@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	src := `update from 'collection_name' set('attr1': 'new_value', 'attr2': 'new_value') where('attr' == 'd');`
+	src := `rename project 'project_name' to 'new_name';`
 
 	lexer_, err := query_parser.CreateNewLexer(src)
 
@@ -15,7 +15,7 @@ func main() {
 		panic(err)
 	}
 
-	parser := query_parser.Parser{Lexer: *lexer_}
+	parser := query_parser.CreateNewParser(*lexer_)
 
 	parser.Parse()
 
