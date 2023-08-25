@@ -1,4 +1,4 @@
-package parser
+package query_parser
 
 type TokenType string
 
@@ -60,4 +60,12 @@ func (ts *TokenSequence) Push(token *Token) {
 
 func (ts *TokenSequence) Top() Token {
 	return ts.Tokens[len(ts.Tokens)-1]
+}
+
+func (ts *TokenSequence) TopLexem() string {
+	return ts.Top().Lexem
+}
+
+func (ts *TokenSequence) ModifyTopLexem(lexem string) {
+	ts.Tokens[len(ts.Tokens)-1].Lexem = lexem
 }

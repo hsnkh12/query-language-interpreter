@@ -1,4 +1,4 @@
-package parser
+package query_parser
 
 import (
 	"errors"

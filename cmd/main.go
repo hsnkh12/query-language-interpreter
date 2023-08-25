@@ -2,25 +2,25 @@ package main
 
 import (
 	"fmt"
-	"jsondb/internal/parser"
+	"jsondb/internal/query_parser"
 )
 
 func main() {
 
-	src := `add into 'collection' doc('key':doc('key':12,'key':doc('key': doc('key':'value'), 'key':'value'),'key':'value'));`
+	src := `add into 'collection_name' doc('attr1': 'value', 'attr2': 'value', 'attr3': doc( 'attr4' : 'value'));`
 
-	lexer_, err := parser.CreateNewLexer(src)
+	lexer_, err := query_parser.CreateNewLexer(src)
 
 	if err != nil {
 		panic(err)
 	}
 
-	parser := parser.Parser{Lexer: *lexer_}
+	parser := query_parser.Parser{Lexer: *lexer_}
 
-	err = parser.Parse()
+	parser.Parse()
 
-	if err != nil {
-		panic(err)
+	if parser.Err != nil {
+		panic(parser.Err)
 	}
 
 	for _, tok := range parser.Seq.Tokens {
