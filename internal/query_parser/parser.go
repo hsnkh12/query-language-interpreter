@@ -73,7 +73,7 @@ func (p *Parser) Parse_CreateDelete() {
 	case COLLECTION:
 		p.Parse_Name_StringLiteral()
 	default:
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection'"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection' keywords"))
 		return
 	}
 
@@ -98,7 +98,7 @@ func (p *Parser) Parse_Rename() {
 	case COLLECTION:
 		p.Parse_Rename_StringLiteral()
 	default:
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection'"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection' keywords"))
 		return
 	}
 
@@ -121,7 +121,7 @@ func (p *Parser) Parse_Rename_StringLiteral() {
 			p.Parse_End()
 		}
 	} else {
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal 'collection_name'"))
 	}
 
 }
@@ -171,7 +171,7 @@ func (p *Parser) Parse_Add() {
 			p.Parse_Doc()
 		}
 	} else {
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'into'"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'into' keyword"))
 		return
 	}
 
@@ -194,7 +194,7 @@ func (p *Parser) Parse_Doc() {
 			p.Parse_Inside_Doc()
 		}
 	} else {
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'doc'"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'doc' keyword"))
 		return
 	}
 
@@ -452,7 +452,7 @@ func (p *Parser) Parse_Where() {
 		}
 
 	} else {
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'attrs'"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'attrs' keyword"))
 		return
 	}
 
@@ -549,7 +549,7 @@ func (p *Parser) Parse_Update() {
 		}
 
 	} else {
-		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected valid logical operation"))
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'from' keyword"))
 		return
 	}
 }
@@ -644,6 +644,31 @@ func (p *Parser) Parse_Inside_Set() {
 
 	} else {
 		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes"))
+		return
+	}
+
+}
+
+func (p *Parser) Parse_Delete() {
+
+	if p.Stop {
+		return
+	}
+
+	p.Lex()
+	p.SkipWhiteSpaces()
+	p.PushToken()
+
+	if p.Lexer.CurrentToken.Type == FROM {
+
+		p.Parse_Name_StringLiteral()
+
+		if p.Err == nil {
+			p.Parse_Where()
+		}
+
+	} else {
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', 'from' keyword"))
 		return
 	}
 
