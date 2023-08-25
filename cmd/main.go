@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	src := `add into 'collection_name' doc('attr1': 'value', 'attr2': 'value', 'attr3': doc( 'attr4' : 'value'));`
+	src := `update from 'collection_name' set('attr1': 'new_value', 'attr2': 'new_value') where('attr' == 'd');`
 
 	lexer_, err := query_parser.CreateNewLexer(src)
 
@@ -18,6 +18,10 @@ func main() {
 	parser := query_parser.Parser{Lexer: *lexer_}
 
 	parser.Parse()
+
+	if lexer_.Err != nil {
+		panic(lexer_.Err)
+	}
 
 	if parser.Err != nil {
 		panic(parser.Err)

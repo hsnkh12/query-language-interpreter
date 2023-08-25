@@ -9,12 +9,13 @@ type Parser struct {
 	Seq       TokenSequence
 	nestedDoc int
 	Err       error
+	Stop      bool
 }
 
 func (p *Parser) Lex() {
-	err := p.Lexer.Lex()
-	if err != nil {
-		p.Err = err
+	p.Lexer.Lex()
+	if p.Lexer.Err != nil {
+		p.Stop = true
 	}
 }
 
@@ -22,33 +23,42 @@ func (p *Parser) PushToken() {
 	p.Seq.Push(p.Lexer.CurrentToken)
 }
 
+func (p *Parser) ThrowError(err error) {
+	p.Err = err
+	p.Stop = true
+}
+
 func (p *Parser) Parse() {
 
 	p.Lex()
 	p.SkipWhiteSpaces()
-
 	p.PushToken()
 
-	if p.Lexer.CurrentToken.Type == CREATE {
+	switch p.Lexer.CurrentToken.Type {
+
+	case CREATE:
 		p.Parse_CreateDelete()
-	} else if p.Lexer.CurrentToken.Type == DELETE {
+	case DELETE:
 		p.Parse_CreateDelete()
-	} else if p.Lexer.CurrentToken.Type == RENAME {
+	case RENAME:
 		p.Parse_Rename()
-	} else if p.Lexer.CurrentToken.Type == UPDATE {
-	} else if p.Lexer.CurrentToken.Type == ADD {
+	case ADD:
 		p.Parse_Add()
-	} else if p.Lexer.CurrentToken.Type == GET {
+	case GET:
 		p.Parse_Get()
-	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "'")
+	case UPDATE:
+		p.Parse_Update()
+
+	default:
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "'"))
+
 	}
 
 }
 
 func (p *Parser) Parse_CreateDelete() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -56,17 +66,24 @@ func (p *Parser) Parse_CreateDelete() {
 	p.SkipWhiteSpaces()
 	p.PushToken()
 
-	if p.Lexer.CurrentToken.Type == PROJECT || p.Lexer.CurrentToken.Type == COLLECTION {
-		p.Parse_CreateDelete_StringL()
-	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection'")
+	switch p.Lexer.CurrentToken.Type {
+
+	case PROJECT:
+		p.Parse_Name_StringLiteral()
+	case COLLECTION:
+		p.Parse_Name_StringLiteral()
+	default:
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection'"))
 		return
 	}
+
+	p.Parse_End()
+
 }
 
 func (p *Parser) Parse_Rename() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -74,17 +91,22 @@ func (p *Parser) Parse_Rename() {
 	p.SkipWhiteSpaces()
 	p.PushToken()
 
-	if p.Lexer.CurrentToken.Type == PROJECT || p.Lexer.CurrentToken.Type == COLLECTION {
-		p.Parse_Rename_StringL()
-	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection'")
+	switch p.Lexer.CurrentToken.Type {
+
+	case PROJECT:
+		p.Parse_Rename_StringLiteral()
+	case COLLECTION:
+		p.Parse_Rename_StringLiteral()
+	default:
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'project' or 'collection'"))
 		return
 	}
+
 }
 
-func (p *Parser) Parse_CreateDelete_StringL() {
+func (p *Parser) Parse_Rename_StringLiteral() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -93,52 +115,20 @@ func (p *Parser) Parse_CreateDelete_StringL() {
 	p.PushToken()
 
 	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
-		p.Parse_End()
+		p.Parse_Name_StringLiteral()
+
+		if p.Err == nil {
+			p.Parse_End()
+		}
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal")
-		return
-	}
-}
-
-func (p *Parser) Parse_Rename_StringL() {
-
-	if p.Err != nil {
-		return
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal"))
 	}
 
-	p.Lex()
-	p.SkipWhiteSpaces()
-	p.PushToken()
-
-	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
-		p.Parse_Rename_SecStringL()
-	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal")
-	}
-
-}
-
-func (p *Parser) Parse_Rename_SecStringL() {
-
-	if p.Err != nil {
-		return
-	}
-
-	p.Lex()
-	p.SkipWhiteSpaces()
-	p.PushToken()
-
-	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
-		p.Parse_End()
-	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expexted string literal")
-		return
-	}
 }
 
 func (p *Parser) Parse_End() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -149,7 +139,7 @@ func (p *Parser) Parse_End() {
 	if p.Lexer.CurrentToken.Type == SEMI_COLUMN {
 		return
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "'")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "'"))
 		return
 	}
 }
@@ -167,7 +157,7 @@ func (p *Parser) SkipWhiteSpaces() {
 
 func (p *Parser) Parse_Add() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -178,18 +168,18 @@ func (p *Parser) Parse_Add() {
 	if p.Lexer.CurrentToken.Type == INTO {
 		p.Parse_Name_StringLiteral()
 		if p.Err == nil {
-			p.Parse_Add_Doc()
+			p.Parse_Doc()
 		}
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'into'")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'into'"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_Add_Doc() {
+func (p *Parser) Parse_Doc() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -201,18 +191,18 @@ func (p *Parser) Parse_Add_Doc() {
 		p.Parse_OpenParam(true)
 
 		if p.Err == nil {
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Doc()
 		}
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'doc'")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'doc'"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_Add_Inside_Doc() {
+func (p *Parser) Parse_Inside_Doc() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -224,10 +214,10 @@ func (p *Parser) Parse_Add_Inside_Doc() {
 
 		if top == COMMA || top == OPEN_PARM || top == COLUMN {
 			p.PushToken()
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Doc()
 
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes"))
 			return
 		}
 
@@ -235,13 +225,13 @@ func (p *Parser) Parse_Add_Inside_Doc() {
 
 		if top == COLUMN {
 			p.PushToken()
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Doc()
 
 		} else if top == NUMBER_LITERAL || top == DOT {
 			p.Parse_NumberLiteral()
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Doc()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore number literal")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore number literal"))
 			return
 		}
 
@@ -249,9 +239,9 @@ func (p *Parser) Parse_Add_Inside_Doc() {
 
 		if top != COMMA {
 			p.PushToken()
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Doc()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair"))
 			return
 		}
 
@@ -259,9 +249,9 @@ func (p *Parser) Parse_Add_Inside_Doc() {
 
 		if top == STRING_LITERAL {
 			p.PushToken()
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Doc()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key string literal before ':'")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key string literal before ':'"))
 			return
 		}
 
@@ -272,31 +262,31 @@ func (p *Parser) Parse_Add_Inside_Doc() {
 			p.Parse_OpenParam(true)
 
 			if p.Err == nil {
-				p.Parse_Add_Inside_Doc()
+				p.Parse_Inside_Doc()
 			}
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore 'doc'")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore 'doc'"))
 			return
 		}
 
 	} else if p.Lexer.CurrentToken.Type == CLOSE_PARAM {
 
 		if top == COLUMN || top == COMMA {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair before ')'")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair before ')'"))
 			return
 		} else {
 
 			p.PushToken()
 			if p.nestedDoc > 1 {
 				p.nestedDoc--
-				p.Parse_Add_Inside_Doc()
+				p.Parse_Inside_Doc()
 			} else {
 				p.Parse_End()
 			}
 		}
 
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes"))
 		return
 	}
 
@@ -308,7 +298,7 @@ func (p *Parser) Parse_NumberLiteral() {
 
 func (p *Parser) Parse_Get() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -316,12 +306,13 @@ func (p *Parser) Parse_Get() {
 	p.SkipWhiteSpaces()
 
 	top := p.Seq.Top().Type
+	p.PushToken()
 
 	if p.Lexer.CurrentToken.Type == ONE {
 		if top != ONE {
 			p.Parse_Get()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected from")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'from' keyword"))
 			return
 		}
 
@@ -329,11 +320,11 @@ func (p *Parser) Parse_Get() {
 		p.Parse_Name_StringLiteral()
 
 		if p.Err == nil {
-			p.Parse_Get_Attrs()
+			p.Parse_Attrs()
 		}
 
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'one' or 'from'")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'one' or 'from'"))
 		return
 	}
 
@@ -341,7 +332,7 @@ func (p *Parser) Parse_Get() {
 
 func (p *Parser) Parse_Name_StringLiteral() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -352,15 +343,15 @@ func (p *Parser) Parse_Name_StringLiteral() {
 	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
 		return
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string literal"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_Get_Attrs() {
+func (p *Parser) Parse_Attrs() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -372,19 +363,19 @@ func (p *Parser) Parse_Get_Attrs() {
 
 		p.Parse_OpenParam(false)
 		if p.Err == nil {
-			p.Parse_Get_Inside_Attr()
+			p.Parse_Inside_Attr()
 		}
 
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'attrs'")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'attrs'"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_OpenParam(isDoc bool) {
+func (p *Parser) Parse_OpenParam(countNested bool) {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -394,60 +385,58 @@ func (p *Parser) Parse_OpenParam(isDoc bool) {
 
 	if p.Lexer.CurrentToken.Type == OPEN_PARM {
 
-		if isDoc {
+		if countNested {
 			p.nestedDoc++
 		}
 
 		return
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected '('")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected '('"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_Get_Inside_Attr() {
+func (p *Parser) Parse_Inside_Attr() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
 	p.Lex()
 	p.SkipWhiteSpaces()
 	top := p.Seq.Top().Type
-
-	p.SkipWhiteSpaces()
 	p.PushToken()
 
 	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
 
 		if top == OPEN_PARM || top == COMMA {
-			p.Parse_Get_Inside_Attr()
+			p.Parse_Inside_Attr()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ',' before string")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ',' before string"))
 			return
 		}
 
 	} else if p.Lexer.CurrentToken.Type == COMMA {
 
 		if top != COMMA {
-			p.Parse_Get_Inside_Attr()
+			p.Parse_Inside_Attr()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string before ','")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected string before ','"))
 			return
 		}
 	} else if p.Lexer.CurrentToken.Type == CLOSE_PARAM {
-		p.Parse_Get_Where()
+		p.Parse_Where()
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected literal string attributes")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected literal string attributes"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_Get_Where() {
+func (p *Parser) Parse_Where() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -459,19 +448,19 @@ func (p *Parser) Parse_Get_Where() {
 
 		p.Parse_OpenParam(false)
 		if p.Err == nil {
-			p.Parse_Add_Inside_Doc()
+			p.Parse_Inside_Where()
 		}
 
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'attrs'")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected 'attrs'"))
 		return
 	}
 
 }
 
-func (p *Parser) Parse_Get_Inside_Where() {
+func (p *Parser) Parse_Inside_Where() {
 
-	if p.Err != nil {
+	if p.Stop {
 		return
 	}
 
@@ -484,10 +473,10 @@ func (p *Parser) Parse_Get_Inside_Where() {
 
 		if top != STRING_LITERAL && top != NUMBER_LITERAL {
 			p.PushToken()
-			p.Parse_Get_Inside_Where()
+			p.Parse_Inside_Where()
 
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected logical operation berfore string literal"))
 			return
 		}
 
@@ -495,13 +484,13 @@ func (p *Parser) Parse_Get_Inside_Where() {
 
 		if IsLogicalOperation(top) {
 			p.PushToken()
-			p.Parse_Get_Inside_Where()
+			p.Parse_Inside_Where()
 
 		} else if top == NUMBER_LITERAL || top == DOT {
 			p.Parse_NumberLiteral()
-			p.Parse_Get_Inside_Where()
+			p.Parse_Inside_Where()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected logical operation berfore number literal")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected logical operation berfore number literal"))
 			return
 		}
 
@@ -509,9 +498,9 @@ func (p *Parser) Parse_Get_Inside_Where() {
 
 		if top == STRING_LITERAL || top == NUMBER_LITERAL {
 			p.PushToken()
-			p.Parse_Get_Inside_Where()
+			p.Parse_Inside_Where()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', Invalid logical operation")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', Invalid logical operation"))
 			return
 		}
 
@@ -519,23 +508,142 @@ func (p *Parser) Parse_Get_Inside_Where() {
 
 		if !IsLogicalAndOr(top) {
 			p.PushToken()
-			p.Parse_Get_Inside_Where()
+			p.Parse_Inside_Where()
 		} else {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', Invalid logical operation")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', Invalid logical operation"))
 			return
 		}
 
 	} else if p.Lexer.CurrentToken.Type == CLOSE_PARAM {
 
 		if top == COLUMN || top == COMMA {
-			p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair before ')'")
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair before ')'"))
 			return
 		} else {
-
+			p.PushToken()
 			p.Parse_End()
 		}
 	} else {
-		p.Err = errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected logical operation")
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected valid logical operation"))
+		return
+	}
+
+}
+
+func (p *Parser) Parse_Update() {
+
+	if p.Stop {
+		return
+	}
+
+	p.Lex()
+	p.SkipWhiteSpaces()
+	p.PushToken()
+
+	if p.Lexer.CurrentToken.Type == FROM {
+
+		p.Parse_Name_StringLiteral()
+
+		if p.Err == nil {
+			p.Parse_Set()
+		}
+
+	} else {
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected valid logical operation"))
+		return
+	}
+}
+
+func (p *Parser) Parse_Set() {
+
+	if p.Stop {
+		return
+	}
+
+	p.Lex()
+	p.SkipWhiteSpaces()
+	p.PushToken()
+
+	if p.Lexer.CurrentToken.Type == SET {
+
+		p.Parse_OpenParam(false)
+
+		if p.Err == nil {
+			p.Parse_Inside_Set()
+		}
+	}
+
+}
+
+func (p *Parser) Parse_Inside_Set() {
+
+	if p.Stop {
+		return
+	}
+
+	p.Lex()
+	p.SkipWhiteSpaces()
+
+	top := p.Seq.Top().Type
+
+	if p.Lexer.CurrentToken.Type == STRING_LITERAL {
+
+		if top == COMMA || top == OPEN_PARM || top == COLUMN {
+			p.PushToken()
+			p.Parse_Inside_Set()
+
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes"))
+			return
+		}
+
+	} else if p.Lexer.CurrentToken.Type == NUMBER_LITERAL || p.Lexer.CurrentToken.Type == DOT {
+
+		if top == COLUMN {
+			p.PushToken()
+			p.Parse_Inside_Set()
+
+		} else if top == NUMBER_LITERAL || top == DOT {
+			p.Parse_NumberLiteral()
+			p.Parse_Inside_Set()
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' berfore number literal"))
+			return
+		}
+
+	} else if p.Lexer.CurrentToken.Type == COMMA {
+
+		if top != COMMA {
+			p.PushToken()
+			p.Parse_Inside_Set()
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair"))
+			return
+		}
+
+	} else if p.Lexer.CurrentToken.Type == COLUMN {
+
+		if top == STRING_LITERAL {
+			p.PushToken()
+			p.Parse_Inside_Set()
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key string literal before ':'"))
+			return
+		}
+
+	} else if p.Lexer.CurrentToken.Type == CLOSE_PARAM {
+
+		if top == COLUMN || top == COMMA {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair before ')'"))
+			return
+		} else {
+
+			p.PushToken()
+			p.Parse_Where()
+		}
+
+	} else {
+		p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value attributes"))
 		return
 	}
 

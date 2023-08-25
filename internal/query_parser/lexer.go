@@ -11,6 +11,7 @@ type Lexer struct {
 	CurrentChar  rune
 	CurrentToken *Token
 	CurrentLexem string
+	Err          error
 }
 
 func CreateNewLexer(src string) (*Lexer, error) {
@@ -26,12 +27,12 @@ func CreateNewLexer(src string) (*Lexer, error) {
 	}, nil
 }
 
-func (l *Lexer) Lex() error {
+func (l *Lexer) Lex() {
 
 	src := l.Src
 
 	if l.Position >= len(src)-1 {
-		return nil
+		return
 	}
 
 	l.Position++
@@ -75,9 +76,9 @@ func (l *Lexer) Lex() error {
 	l.CurrentToken = token
 
 	if l.CurrentToken.Type == UNKNOWN {
-		return errors.New("LEXER ERROR: Unknown token '" + l.CurrentLexem + "'")
+		l.Err = errors.New("LEXER ERROR: Unknown token '" + l.CurrentLexem + "'")
+		return
 	}
-	return nil
 }
 
 func DetectTokenType(lexem string) TokenType {
