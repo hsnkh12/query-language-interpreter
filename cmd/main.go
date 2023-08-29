@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	src := `rename project 'project_name' to 'new_name';`
+	src := `add into kjk 'collection_name' doc('attr1': 'value', 'attr2': 'value', 'attr3': doc( 'attr4' : 'value'));`
 
 	lexer_, err := query_parser.CreateNewLexer(src)
 
