@@ -1,34 +1,34 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"jsondb/internal/query_interpreter"
 	"jsondb/internal/query_parser"
 )
 
 func main() {
 
-	src := `add into kjk 'collection_name' doc('attr1': 'value', 'attr2': 'value', 'attr3': doc( 'attr4' : 'value'));`
+	src := `add into 'collection_name' doc('attr1': 'value', 'attr2': 'value', 'attr3' : doc('attr4':'d'));`
 
-	lexer_, err := query_parser.CreateNewLexer(src)
+	lexer, err := query_parser.CreateNewLexer(src)
 
 	if err != nil {
 		panic(err)
 	}
 
-	parser := query_parser.CreateNewParser(*lexer_)
+	parser := query_parser.CreateNewParser(*lexer)
 
-	parser.Parse()
+	interpreter := query_interpreter.CreateNewInterpreter(*parser)
 
-	if lexer_.Err != nil {
-		panic(lexer_.Err)
+	err = interpreter.Interpret()
+
+	if err != nil {
+		panic(err)
 	}
 
-	if parser.Err != nil {
-		panic(parser.Err)
-	}
+	q, _ := json.Marshal(interpreter.Query)
 
-	for _, tok := range parser.Seq.Tokens {
-		fmt.Println(tok)
-	}
+	fmt.Println(string(q))
 
 }
