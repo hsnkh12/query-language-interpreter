@@ -15,7 +15,7 @@ type Parser struct {
 func CreateNewParser(lexer Lexer) *Parser {
 	return &Parser{
 		Lexer:     lexer,
-		Seq:       TokenSequence{Tokens: []Token{}},
+		Seq:       TokenSequence{Tokens: []Token{}, currentIndex: 0},
 		nestedDoc: 0,
 		Err:       nil,
 		Stop:      false,

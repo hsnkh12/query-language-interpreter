@@ -1,5 +1,7 @@
 package query_parser
 
+import "strings"
+
 type TokenType string
 
 const (
@@ -51,7 +53,8 @@ func tokenize(t TokenType, lexem string) *Token {
 }
 
 type TokenSequence struct {
-	Tokens []Token
+	currentIndex int
+	Tokens       []Token
 }
 
 func (ts *TokenSequence) Push(token *Token) {
@@ -68,4 +71,19 @@ func (ts *TokenSequence) TopLexem() string {
 
 func (ts *TokenSequence) ModifyTopLexem(lexem string) {
 	ts.Tokens[len(ts.Tokens)-1].Lexem = lexem
+}
+
+func (ts *TokenSequence) Next() {
+
+	if ts.currentIndex < len(ts.Tokens)-1 {
+		ts.currentIndex++
+	}
+}
+
+func (ts *TokenSequence) GetCurrentToken() Token {
+	return ts.Tokens[ts.currentIndex]
+}
+
+func (ts *TokenSequence) GetCurrentLexem() string {
+	return strings.Replace(ts.GetCurrentToken().Lexem, "'", "", -1)
 }
