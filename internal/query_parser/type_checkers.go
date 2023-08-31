@@ -15,3 +15,10 @@ func IsLogicalOperation(t TokenType) bool {
 	}
 	return false
 }
+
+func IsTFN(t TokenType) bool {
+	if t == TRUE || t == FALSE || t == NULL {
+		return true
+	}
+	return false
+}

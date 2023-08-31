@@ -15,7 +15,7 @@ type Parser struct {
 func CreateNewParser(lexer Lexer) *Parser {
 	return &Parser{
 		Lexer:     lexer,
-		Seq:       TokenSequence{Tokens: []Token{}, currentIndex: 0},
+		Seq:       TokenSequence{Tokens: []Token{}, Index: 0},
 		nestedDoc: 0,
 		Err:       nil,
 		Stop:      false,
@@ -232,6 +232,16 @@ func (p *Parser) ParseInsideDoc() {
 			return
 		}
 
+	} else if IsTFN(p.CurrentTokenType()) {
+		if top == COLUMN {
+			p.PushToken()
+			p.ParseInsideDoc()
+
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected key value pair"))
+			return
+		}
+
 	} else if p.CurrentTokenType() == NUMBER_LITERAL || p.CurrentTokenType() == DOT {
 
 		if top == COLUMN {
@@ -421,6 +431,13 @@ func (p *Parser) ParseInsideAttr() {
 			return
 		}
 
+	} else if IsTFN(p.CurrentTokenType()) {
+		if top == COMMA {
+			p.ParseInsideAttr()
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected ':' before"))
+			return
+		}
 	} else if p.CurrentTokenType() == COMMA {
 
 		if top != COMMA {
@@ -481,6 +498,14 @@ func (p *Parser) ParseInsideWhere() {
 			return
 		}
 
+	} else if IsTFN(p.CurrentTokenType()) {
+		if p.CurrentTokenType() == LOGICAL_EQUAL {
+			p.PushToken()
+			p.ParseInsideWhere()
+		} else {
+			p.ThrowError(errors.New("PARSER ERROR: Unexpected token: '" + p.Lexer.CurrentToken.Lexem + "', expected logical operation berfore"))
+			return
+		}
 	} else if p.CurrentTokenType() == NUMBER_LITERAL || p.CurrentTokenType() == DOT {
 
 		if IsLogicalOperation(top) {

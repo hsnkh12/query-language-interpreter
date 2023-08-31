@@ -144,6 +144,12 @@ func DetectTokenType(lexem string) TokenType {
 		return OPEN_BRAC
 	case "]":
 		return CLOSED_BRAC
+	case "true":
+		return TRUE
+	case "false":
+		return FALSE
+	case "null":
+		return NULL
 	case ".":
 		return DOT
 	case " ":

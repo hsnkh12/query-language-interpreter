@@ -41,6 +41,9 @@ const (
 	OPEN_BRAC       = "OPEN_BRAC"
 	CLOSED_BRAC     = "CLOSED_BRAC"
 	DOT             = "DOT"
+	NULL            = "NULL"
+	TRUE            = "TRUE"
+	FALSE           = "FALSE"
 )
 
 type Token struct {
@@ -53,8 +56,8 @@ func tokenize(t TokenType, lexem string) *Token {
 }
 
 type TokenSequence struct {
-	currentIndex int
-	Tokens       []Token
+	Index  int
+	Tokens []Token
 }
 
 func (ts *TokenSequence) Push(token *Token) {
@@ -75,13 +78,19 @@ func (ts *TokenSequence) ModifyTopLexem(lexem string) {
 
 func (ts *TokenSequence) Next() {
 
-	if ts.currentIndex < len(ts.Tokens)-1 {
-		ts.currentIndex++
+	if ts.Index < len(ts.Tokens)-1 {
+		ts.Index++
+	}
+}
+
+func (ts *TokenSequence) Back() {
+	if ts.Index > 0 {
+		ts.Index--
 	}
 }
 
 func (ts *TokenSequence) GetCurrentToken() Token {
-	return ts.Tokens[ts.currentIndex]
+	return ts.Tokens[ts.Index]
 }
 
 func (ts *TokenSequence) GetCurrentLexem() string {
