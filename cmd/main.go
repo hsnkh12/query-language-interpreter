@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	src := `add into 'collection_name' doc('attr1': 'value', 'attr2': 'value', 'attr3' : doc('attr4':'d'));`
+	src := `add into 'collection_name' doc('attr1': true, 'attr2': 'value', 'attr3': doc( 'attr4' : 'value'));`
 
 	lexer, err := query_parser.CreateNewLexer(src)
 
