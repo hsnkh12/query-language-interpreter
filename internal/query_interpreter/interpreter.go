@@ -1,7 +1,9 @@
 package query_interpreter
 
 import (
+	"errors"
 	qp "jsondb/internal/query_parser"
+	"strconv"
 )
 
 type Interpreter struct {
@@ -32,6 +34,7 @@ func (i *Interpreter) Interpret() error {
 	}
 
 	i.Seq = &i.Parser.Seq
+	var err error = nil
 
 	switch i.Seq.GetCurrentToken().Type {
 
@@ -42,14 +45,14 @@ func (i *Interpreter) Interpret() error {
 	case qp.RENAME:
 		i.InterpretRename()
 	case qp.ADD:
-		i.InterpretAdd()
+		err = i.InterpretAdd()
 	case qp.GET:
 		return nil
 	case qp.UPDATE:
 		return nil
 	}
 
-	return nil
+	return err
 }
 
 func (i *Interpreter) InterpretCreate() {
@@ -106,7 +109,7 @@ func (i *Interpreter) InterpretDelete() {
 
 }
 
-func (i *Interpreter) InterpretAdd() {
+func (i *Interpreter) InterpretAdd() error {
 
 	i.Query.OPT_TYPE = qp.ADD
 
@@ -115,18 +118,22 @@ func (i *Interpreter) InterpretAdd() {
 
 	i.Query.Kwargs["name"] = i.Seq.GetCurrentLexem()
 
-	doc := make(map[string]interface{})
-
 	i.Seq.Next()
-	doc = i.InterpretAddDoc(nil)
+	doc, err := i.InterpretAddDoc()
+
+	if err != nil {
+		return err
+	}
 
 	i.Query.Kwargs["doc"] = doc
 
+	return nil
+
 }
 
-func (i *Interpreter) InterpretAddDoc(doc map[string]interface{}) map[string]interface{} {
+func (i *Interpreter) InterpretAddDoc() (map[string]interface{}, error) {
 
-	doc = make(map[string]interface{})
+	doc := make(map[string]interface{})
 
 	i.Seq.Next()
 	var key string
@@ -135,19 +142,54 @@ func (i *Interpreter) InterpretAddDoc(doc map[string]interface{}) map[string]int
 
 		i.Seq.Next()
 
+		if i.Seq.GetCurrentToken().Type == qp.CLOSE_PARAM {
+			break
+		}
 		key = i.Seq.GetCurrentLexem()
 		i.Seq.Next()
+
+		if i.Seq.GetCurrentToken().Type == qp.COMMA || i.Seq.GetCurrentToken().Type == qp.CLOSE_PARAM {
+			doc[key] = nil
+			continue
+		}
+
 		i.Seq.Next()
 
 		if i.Seq.GetCurrentToken().Type == qp.DOC {
-			i.InterpretAddDoc(doc)
-		}
+			v, err := i.InterpretAddDoc()
 
-		doc[key] = i.Seq.GetCurrentLexem()
+			if err != nil {
+				return nil, err
+			}
+			doc[key] = v
+
+		} else {
+
+			if i.Seq.GetCurrentToken().Type == qp.NUMBER_LITERAL {
+
+				if n, err := strconv.Atoi(i.Seq.GetCurrentLexem()); err == nil {
+					doc[key] = n
+				} else if n2, err := strconv.ParseFloat(i.Seq.GetCurrentLexem(), 64); err == nil {
+					doc[key] = n2
+				} else {
+					return nil, errors.New("INTERPRETER ERROR: invalid number '" + i.Seq.GetCurrentLexem() + "'")
+
+				}
+
+			} else if i.Seq.GetCurrentToken().Type == qp.TRUE {
+				doc[key] = true
+			} else if i.Seq.GetCurrentToken().Type == qp.FALSE {
+				doc[key] = false
+			} else if i.Seq.GetCurrentToken().Type == qp.NULL {
+				doc[key] = nil
+			} else {
+				doc[key] = i.Seq.GetCurrentLexem()
+			}
+		}
 		i.Seq.Next()
 
 	}
 
-	return doc
+	return doc, nil
 
 }
