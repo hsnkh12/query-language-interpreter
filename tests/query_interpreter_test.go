@@ -1,11 +1,12 @@
 package tests
 
 import (
+	"jsondb/internal/query_interpreter"
 	"jsondb/internal/query_parser"
 	"testing"
 )
 
-func TestParser(t *testing.T) {
+func TestInterpreter(t *testing.T) {
 	tests := []struct {
 		query  string
 		hasErr bool
@@ -38,10 +39,16 @@ func TestParser(t *testing.T) {
 
 	for _, test := range tests {
 		lexer, _ := query_parser.CreateNewLexer(test.query)
-		parser := query_parser.CreateNewParser(*lexer)
-		parser.Parse()
 
-		if lexer.Err != nil {
+		parser := query_parser.CreateNewParser(*lexer)
+
+		interpreter := query_interpreter.CreateNewInterpreter(*parser)
+
+		err := interpreter.Interpret()
+
+		if err != nil {
+			t.Errorf("Query: %s\nExpected no error, but got: %v", test.query, err)
+		} else if lexer.Err != nil {
 			t.Errorf("Query: %s\nExpected no error, but got: %v", test.query, lexer.Err)
 		} else if parser.Err != nil && !test.hasErr {
 			t.Errorf("Query: %s\nExpected no error, but got: %v", test.query, parser.Err)
