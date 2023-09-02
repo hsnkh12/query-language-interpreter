@@ -122,6 +122,10 @@ func DetectTokenType(lexem string) TokenType {
 		return LOGICAL_OR
 	case "&&":
 		return LOGICAL_AND
+	case "=>":
+		return LOGICAL_EBIGGER
+	case "=<":
+		return LOGICAL_ESMALLER
 	case "==":
 		return LOGICAL_EQUAL
 	case ">":

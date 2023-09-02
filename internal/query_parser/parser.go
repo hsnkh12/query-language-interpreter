@@ -532,7 +532,7 @@ func (p *Parser) ParseInsideWhere() {
 
 	} else if IsLogicalOperation(p.CurrentTokenType()) {
 
-		if !IsLogicalAndOr(top) {
+		if !IsLogicalAndOr(top) && !IsLogicalOperation((top)) {
 			p.PushToken()
 			p.ParseInsideWhere()
 		} else {
