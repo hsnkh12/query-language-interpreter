@@ -10,7 +10,7 @@ func IsLogicalAndOr(t TokenType) bool {
 
 func IsLogicalOperation(t TokenType) bool {
 
-	if t == LOGICAL_BIGGER || t == LOGICAL_EQUAL || t == LOGICAL_SMALLER || t == LOGICAL_BIGGER || t == LOGICAL_ESMALLER {
+	if t == LOGICAL_EQUAL || t == LOGICAL_SMALLER || t == LOGICAL_BIGGER || t == LOGICAL_ESMALLER {
 		return true
 	}
 	return false
