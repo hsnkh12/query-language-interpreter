@@ -1,0 +1,27 @@
+data
+- config.json
+- projects
+    - project1 
+        - collection 1
+        - collection 2 
+
+
+
+json-dbms start -p 3333 -d /myapp/data 
+
+
+When first running this command, the program will look for config.json file in given dir.
+If not found, it will create a new config.js (non-editable) file in this dir, by asking the user for some information like, username, password (pasword will be hashed), and first project name. 
+Else, the program will run fine and will be waiting for executing queries.
+queries execution could be done in 2 ways.
+1- using a client library that will be created in nodeJS
+2- directly from the cli 
+3- using telnet by establishing tcp communication
+
+
+for each query sent, there will be headers added to the query using a custom protocol. headers will contain some
+information like, project_name, username, password. 
+something like
+''' 
+/project_name:''/username:''/password:''/query:''
+'''
