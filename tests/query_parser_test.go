@@ -49,6 +49,7 @@ func TestParser(t *testing.T) {
 			t.Errorf("Query: %s\nExpected error, but got none", test.query)
 		} else {
 			t.Logf(test.query, "OUTPUT:", parser.Seq.Tokens)
+			t.Log("\n----------------------------\n")
 		}
 	}
 }

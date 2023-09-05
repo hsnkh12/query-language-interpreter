@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"jsondb/internal/query_interpreter"
 	"jsondb/internal/query_parser"
 	"testing"
@@ -54,8 +55,10 @@ func TestInterpreter(t *testing.T) {
 			t.Errorf("Query: %s\nExpected no error, but got: %v", test.query, parser.Err)
 		} else if parser.Err == nil && test.hasErr {
 			t.Errorf("Query: %s\nExpected error, but got none", test.query)
-		} else {
-			t.Logf(test.query, "OUTPUT:", parser.Seq.Tokens)
 		}
+
+		j, _ := json.Marshal(interpreter.Query)
+		t.Logf("%s OUTPUT: %+v", test.query, string(j))
+		t.Log("\n----------------------------\n")
 	}
 }
