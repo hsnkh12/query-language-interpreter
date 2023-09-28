@@ -2,6 +2,7 @@ package query_interpreter
 
 import (
 	"errors"
+	"fmt"
 	qp "jsondb/internal/query_parser"
 	"strconv"
 )
@@ -218,7 +219,7 @@ func (i *Interpreter) InterpretAttrs() {
 
 }
 
-func (i *Interpreter) InterpretWhere() {
+func (i *Interpreter) InterpretWhere() error {
 
 	i.Seq.Next()
 	i.Seq.Next()
@@ -226,11 +227,17 @@ func (i *Interpreter) InterpretWhere() {
 	where := []string{}
 
 	for i.Seq.GetCurrentToken().Type != qp.CLOSE_PARAM {
+
+		if len(where) >= 7 {
+			fmt.Println("INTERPRETER WARNING: Cannot implement more than 2 logical operations")
+			break
+		}
 		where = append(where, i.Seq.GetCurrentLexem())
 		i.Seq.Next()
 	}
 	i.Query.Kwargs["where"] = where
 
+	return nil
 }
 
 func (i *Interpreter) InterpretAdd() error {
