@@ -3,22 +3,23 @@ package databse_manager
 import (
 	"encoding/json"
 	"fmt"
+	"jsondb/internal/data_manager"
 	qi "jsondb/internal/query_interpreter"
 	"jsondb/internal/query_parser"
 )
 
 type DatabaseManager struct {
-	QuerySrc    string
-	ProjectName string
-	DIR_PATH    string
-	Query       *qi.Query
+	QuerySrc      string
+	ProjectName   string
+	MAIN_DIR_PATH string
+	Query         *qi.Query
 }
 
-func CreateNewDatabaseManager(src string, project_name string, dir_path string) *DatabaseManager {
+func CreateNewDatabaseManager(src string, project_name string, MAIN_DIR_PATH string) *DatabaseManager {
 	return &DatabaseManager{
-		QuerySrc:    src,
-		ProjectName: project_name,
-		DIR_PATH:    dir_path,
+		QuerySrc:      src,
+		ProjectName:   project_name,
+		MAIN_DIR_PATH: MAIN_DIR_PATH,
 	}
 }
 
@@ -54,30 +55,32 @@ func (dm *DatabaseManager) ExecuteQuery() error {
 
 func (dm *DatabaseManager) CallDataManagerMethod() error {
 
+	var err error
+
 	switch dm.Query.OPT_TYPE {
 	case qi.CREATE_PROJECT:
-		return nil
+		err = data_manager.CreateProject(dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.DELETE_PROJECT:
-		return nil
+		err = data_manager.DeleteProject(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.CREATE_COLLECTION:
-		return nil
+		err = data_manager.CreateCollection(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.DELETE_COLLECTION:
-		return nil
+		err = data_manager.DeleteCollection(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.RENAME_PROJECT:
-		return nil
+		err = data_manager.RenameProject(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.RENAME_COLLECTION:
-		return nil
+		err = data_manager.RenamCollection(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.CREATE_DOCUMENT:
-		return nil
+		err = data_manager.CreateDocument(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.GET_ALL_DOCUMENTS:
-		return nil
+		err = data_manager.GetAllDocuments(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.GET_ONE_DOCUMENT:
-		return nil
+		err = data_manager.GetOneDocument(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.UPDATE_DOCUMENT:
-		return nil
+		err = data_manager.UpdateDocument(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	case qi.DELETE_DOCUMENT:
-		return nil
+		err = data_manager.DeleteDocument(dm.ProjectName, dm.Query.Kwargs, dm.MAIN_DIR_PATH)
 	}
 
-	return nil
+	return err
 }

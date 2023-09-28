@@ -1,16 +1,21 @@
 package data_manager
 
-type CollectionManager struct {
+import "jsondb/internal/files_manager"
+
+// type CollectionManager struct {
+// }
+
+func CreateCollection(projectName string, kwargs map[string]interface{}, MAIN_DIR_PATH string) error {
+	path := MAIN_DIR_PATH + "/" + projectName
+	return files_manager.CreateFile(path, kwargs["name"].(string))
 }
 
-func (m *CollectionManager) CreateCollection() error {
-	return nil
+func RenamCollection(projectName string, kwargs map[string]interface{}, MAIN_DIR_PATH string) error {
+	path := MAIN_DIR_PATH + "/" + projectName + "/" + kwargs["names"].([]interface{})[0].(string) + ".json"
+	return files_manager.RenameFile(path, kwargs["names"].([]interface{})[1].(string))
 }
 
-func (m *CollectionManager) RenamCollection() error {
-	return nil
-}
-
-func (m *CollectionManager) DeleteCollection() error {
-	return nil
+func DeleteCollection(projectName string, kwargs map[string]interface{}, MAIN_DIR_PATH string) error {
+	path := MAIN_DIR_PATH + "/" + projectName + "/" + kwargs["name"].(string) + ".json"
+	return files_manager.DeleteFile(path)
 }
