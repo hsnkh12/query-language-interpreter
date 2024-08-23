@@ -1,5 +1,7 @@
 # query-language-interpreter
 
+## Descriptioon 
+A combination of lexical and syntax anaylzer built from scratch to interpret a custom database query language, built using Go programing language
 
 ## Sample query language
 create project 'project_name'; 
