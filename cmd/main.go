@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	dm "jsondb/internal/database_manager"
+	querymanager "jsondb/internal/query_manager"
 	"os"
 )
 
@@ -21,9 +21,9 @@ func main() {
 			break
 		}
 
-		dbManager := dm.CreateNewDatabaseManager(src, "project1", "/Users/hassanelabdallah/golang/pracs/json_dbms/configs/data-sample")
+		queryManager := querymanager.New(src)
 
-		err := dbManager.ExecuteQuery()
+		err := queryManager.ExecuteQuery()
 
 		if err != nil {
 			panic(err)
